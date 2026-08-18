@@ -1,0 +1,406 @@
+<title>TTS Engine Benchmark — 24 configurations</title>
+<style>
+  :root {
+    --paper:      #F6F8FB;
+    --surface:    #FFFFFF;
+    --ink:        #0F1620;
+    --muted:      #5A6672;
+    --rule:       #DCE3EB;
+    --rail:       #C9D4E2;
+    --neu-band:   #E9F1EA;
+    --neu-rail:   #7FA68B;
+    --good:       #17754A;
+    --warn:       #96701A;
+    --bad:        #A93A2C;
+    --serif: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0C1119; --surface: #141B24; --ink: #E2E8F0; --muted: #93A0B0;
+      --rule: #26313E; --rail: #33404F; --neu-band: #16241B; --neu-rail: #4E7A5C;
+      --good: #4FBF88; --warn: #D7A93F; --bad: #E4796A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0C1119; --surface: #141B24; --ink: #E2E8F0; --muted: #93A0B0;
+    --rule: #26313E; --rail: #33404F; --neu-band: #16241B; --neu-rail: #4E7A5C;
+    --good: #4FBF88; --warn: #D7A93F; --bad: #E4796A;
+  }
+  :root[data-theme="light"] {
+    --paper: #F6F8FB; --surface: #FFFFFF; --ink: #0F1620; --muted: #5A6672;
+    --rule: #DCE3EB; --rail: #C9D4E2; --neu-band: #E9F1EA; --neu-rail: #7FA68B;
+    --good: #17754A; --warn: #96701A; --bad: #A93A2C;
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 16px; line-height: 1.6;
+    margin: 0; padding: 3rem 1.25rem 5rem;
+  }
+  .col { max-width: 64ch; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+  .eyebrow {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(1.9rem, 4vw, 2.6rem);
+    line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -.01em;
+  }
+  h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 1.35rem;
+    margin: 2.5rem 0 0; text-wrap: balance;
+  }
+  p { margin: 0; }
+  .lede { font-size: 1.06rem; color: var(--muted); }
+
+  .tiles {
+    max-width: 1100px; margin: 2.5rem auto 0; display: grid; gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+  .tile {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 3px;
+    padding: .9rem 1rem; display: flex; flex-direction: column; gap: .2rem;
+  }
+  .tile .k { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--muted); }
+  .tile .v { font-family: var(--mono); font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+  .tile .n { font-size: .82rem; color: var(--muted); line-height: 1.45; }
+  .tile.is-neu { border-color: var(--neu-rail); background: var(--neu-band); }
+
+  .scroll { max-width: 1500px; margin: 1.25rem auto 0; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .855rem; }
+  caption {
+    caption-side: top; text-align: left; color: var(--muted);
+    font-size: .84rem; padding-bottom: .6rem;
+  }
+  th, td { padding: .5rem .62rem; text-align: right; white-space: nowrap;
+           border-bottom: 1px solid var(--rule); }
+  th {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+    position: sticky; top: 0; background: var(--paper); border-bottom: 1px solid var(--rail);
+  }
+  th { cursor: pointer; user-select: none; }
+  th:hover { color: var(--ink); }
+  th:focus-visible { outline: 2px solid var(--neu-rail); outline-offset: -2px; }
+  /* Arrow sits in reserved space so the header never reflows when sorting changes */
+  th::after {
+    content: "\2195"; opacity: .25; margin-left: .35em; font-size: .9em;
+  }
+  th[aria-sort="ascending"]::after  { content: "\2191"; opacity: 1; }
+  th[aria-sort="descending"]::after { content: "\2193"; opacity: 1; }
+  th.l, td.l { text-align: left; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.name { font-family: var(--mono); font-size: .82rem; }
+  .play {
+    appearance: none; background: transparent; color: var(--muted);
+    border: 1px solid var(--rail); border-radius: 2px; cursor: pointer;
+    font-size: .6rem; line-height: 1; padding: .28em .42em; margin-right: .5em;
+    vertical-align: middle; transition: color .12s, border-color .12s;
+  }
+  .play:hover { color: var(--ink); border-color: var(--muted); }
+  .play:focus-visible { outline: 2px solid var(--neu-rail); outline-offset: 1px; }
+  .play.playing { color: var(--neu-rail); border-color: var(--neu-rail); }
+  /* Only ever visible on a clip's first click, while it is being decoded */
+  .play.loading { opacity: .55; animation: pulse .9s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .2; } }
+  @media (prefers-reduced-motion: reduce) { .play.loading { animation: none; } }
+  tr.neu .play { border-color: var(--neu-rail); }
+  td.note { white-space: normal; min-width: 22ch; max-width: 34ch;
+            color: var(--muted); font-size: .8rem; line-height: 1.45; }
+  tbody tr:hover td { background: color-mix(in srgb, var(--rule) 28%, transparent); }
+
+  tr.neu td { background: var(--neu-band); }
+  tr.neu td.name { font-weight: 600; }
+  tr.neu td:first-child { box-shadow: inset 3px 0 0 var(--neu-rail); }
+  tr.neu:hover td { background: color-mix(in srgb, var(--neu-rail) 14%, var(--neu-band)); }
+
+  .cls {
+    font-family: var(--mono); font-size: .68rem; padding: .1rem .38rem;
+    border: 1px solid var(--rail); border-radius: 2px; color: var(--muted);
+  }
+  td.pending { color: var(--rail); }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  /* RTF cells with a speech-only measurement behind them; hover shows what the ratio is once
+     silence is discounted */
+  td.measured { text-decoration: underline dotted var(--rail); text-underline-offset: 3px;
+                cursor: help; }
+  /* Licences that constrain use: a strong score a reader cannot act on is worth marking */
+  td.lic { font-size: .78rem; white-space: nowrap; color: var(--muted); }
+  td.lic.restricted { color: var(--warn); }
+
+  .foot { max-width: 64ch; margin: 2.5rem auto 0; display: flex; flex-direction: column; gap: .8rem; }
+  .foot ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: .45rem; }
+  .foot li { font-size: .88rem; color: var(--muted); }
+  code { font-family: var(--mono); font-size: .84em; }
+  strong { font-weight: 600; color: var(--ink); }
+</style>
+
+<div class="col">
+  <p class="eyebrow">TTS ↔ ASR round-trip benchmark · Apple M2 · 2026-08-09</p>
+  <h1>Text-to-speech configurations, measured end to end</h1>
+  <p class="lede">
+    Every engine speaks the same 84-phrase corpus; Whisper <code>base.en</code> transcribes it back.
+    Word error rate is what survives that round trip. NeuTTS configurations sit on the shaded
+    band — each published backbone crossed with every device it can actually run on.
+  </p>
+</div>
+
+<div class="tiles">
+  <div class="tile">
+    <span class="k">Best overall</span>
+    <span class="v">piper · 4%</span>
+    <span class="n">0.04× real time, 60 MB, no torch. Nothing else is close on all three.</span>
+  </div>
+  <div class="tile is-neu">
+    <span class="k">Best LM-backed</span>
+    <span class="v">air-q4-metal</span>
+    <span class="n">4% at 0.50× over 168 samples — matches piper on accuracy and beats every LM rival.</span>
+  </div>
+  <div class="tile is-neu">
+    <span class="k">Unreachable by default</span>
+    <span class="v">split device</span>
+    <span class="n">Needs backbone on metal, codec on cpu. One device for both silently forces CPU.</span>
+  </div>
+  <div class="tile">
+    <span class="k">RTF hides this</span>
+    <span class="v">8.96s of audio</span>
+    <span class="n">nano-q8 emits 3× the audio a phrase needs. That wrecks its WER and flatters its RTF at the same time — compare Avg synth instead.</span>
+  </div>
+</div>
+
+<div class="scroll">
+  <table>
+    <caption>Sorted by word error rate. Autoregressive engines are averaged over two passes (168 samples); feed-forward engines over one (84). chatterbox and bark are still on one pass.</caption>
+    <thead>
+      <tr>
+        <th class="l" tabindex="0" role="columnheader" aria-sort="none">Sample · Configuration</th>
+        <th class="l" tabindex="0" role="columnheader" aria-sort="none">Class</th>
+        <th class="l" tabindex="0" role="columnheader" aria-sort="none">Licence</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Params</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Frame rate</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Released</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Weights</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Libs</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Total disk</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Peak RSS</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Passed</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">WER base</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">WER med</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">PESQ</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Lead-in</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">RTF</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Avg synth</th>
+        <th class="" tabindex="0" role="columnheader" aria-sort="none">Avg audio</th>
+        <th class="l" tabindex="0" role="columnheader" aria-sort="none">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="20">No measurements yet. Run <code>python3 tools/benchmark.py</code>.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="foot">
+  <h2>Reading the table</h2>
+  <ul>
+    <li><strong>Class.</strong> <code>det-ff</code> is a single forward pass with a deterministic duration predictor — same timing every run, cannot hallucinate. <code>stoch-ff</code> is the same architecture with sampling inside it, so output length varies. <code>ar-lm</code> samples audio tokens one at a time; length is emergent, emotion and cloning become possible, and real-time factor is floored by sequential decoding.</li>
+    <li><strong>Params</strong> are counted from the tensors in the weight files. Neuphonic's own cards state these exactly — nano at ~228.7M and 2E at ~236M against 229M and 236M measured here, separating active from total params. Two third-party artefacts do not: <code>vibevoice-realtime-0.5b-q4_k.gguf</code> holds 1.02B, and "CSM-1B" is 1.78B as served. Figures are model parameters; codecs are additional (NeuTTS adds a shared 195M ONNX decoder, chatterbox a 264M S3Gen).</li>
+    <li><strong>Libs</strong> counts packages actually imported, not the declared dependency closure. The three Python engines in isolated virtualenvs (chatterbox, styletts2, melotts) show the venv instead. Engines served by the C++ runtime need only its 18 MB binary — no Python.</li>
+    <li><strong>PESQ</strong> is a no-reference perceptual quality estimate from torchaudio's SQUIM, scored on the sample in the first column — a second axis that WER cannot see, since word error saturates once speech is merely intelligible. <strong>It is scored on trimmed audio.</strong> An earlier pass scored the clips as-is, on the reasoning that padding barely moved the metric: adding six seconds of silence to a clip shifts it only 0.03–0.09. That test was misleading, because it added silence to clips that were already near the ceiling. Removing silence from clips that genuinely pad costs far more — up to 0.78 on nano-q8, whose speech alone scores 3.12 against 3.90 for the padded clip — because silence pulls the estimate toward the ceiling and only mediocre audio has room to rise. Scoring untrimmed rewarded the models that padded most, so every figure here is now the quality of the speech alone. It measures signal quality rather than naturalness or prosody: 2E and Qwen3-TTS sit within 0.01 of each other while sounding clearly different, so treat it as complementary to listening, not a substitute.</li>
+    <li><strong>Lead-in</strong> is silence before the first audible sample. It is not a quality defect in itself, but it distorts everything around it — it inflates RTF by padding the denominator, and Whisper transcribes silence as a word (<code>"You"</code>, <code>"Thank you."</code>) rather than returning nothing, so it manufactures insertion errors. Trimming it before scoring recovers 6 points of WER on nano-q8 and cuts catastrophic transcriptions from 7 to 1. <strong>Measured on the single sample clip in the first column, so treat it as indicative rather than a mean:</strong> across six phrases nano-q8 averages 9.13 s with a 17.18 s maximum, far above the figure one clip happens to show. Trailing silence, by contrast, is uniform at 0.06–0.28 s for every engine.</li>
+    <li><strong>WER base / WER med</strong> are the same audio scored by two transcribers, Whisper base.en and medium.en. They are not interchangeable: base.en hallucinates words onto trailing silence, which inflates WER and is also counted as a runaway. The weaker model understates good engines more than bad ones — Air improves from 8% to 4% under medium.en while nano-q4 stays at 18% — so the gap between them is wider than base.en suggests. A dot means that configuration has not been rescored yet; the sweep runs fastest-first.</li>
+    <li><strong>Avg audio</strong> is seconds of speech produced per phrase. The text is identical for every engine, so this is a like-for-like figure: a high value means the model emitted more than the sentence called for. Only excess is flagged, because unusually short output can mean truncation rather than efficiency.</li>
+    <li><strong>Avg synth</strong> is seconds of compute per phrase. Every engine speaks the same corpus, so it compares directly — and unlike RTF it cannot be lowered by padding the output. Prefer it when ranking efficiency.</li>
+    <li><strong>RTF</strong> is compute seconds per second of audio; below 1.00× is faster than real time. It is the conventional measure but it flatters models that emit excess audio, because that inflates the denominator: nano-q8 produces 8.96 s per phrase where piper needs 3.09 s, and so posts a respectable 0.44× while spending more compute per phrase than 2E. It is also sensitive to machine load and swap pressure, both of which were found to distort it.</li>
+    <li><strong>Frame rate</strong> is tokens generated per second of audio, and it sets the floor on autoregressive speed — no quantization reduces the number of sequential steps. Measured for NeuTTS (50 tokens decode to 0.98 s), read from GGUF metadata for chatterbox, csm and pocket-tts, and from the official repo naming for Qwen3-TTS. Feed-forward engines have no token rate and show "-".</li>
+    <li><strong>Released</strong> is the first commit on the model's weights repository. csm is gated and styletts2 is not on the Hub under that path, so both are approximate.</li>
+    <li><strong>Peak RSS</strong> is the high-water mark during synthesis, including the talkito parent process where the engine runs out of process. It is dominated by the runtime, not the model: engines served by the C++ binary carry no interpreter, while those running in Python carry torch, transformers and their dependency trees. NeuTTS is not among the C++ runtime's backends, so it runs in-process and its figures include that stack — measured against styletts2, another torch engine, the two are within 4% of each other despite very different model sizes.</li>
+    <li><strong>†</strong> On Apple Silicon, Metal allocations do not appear in RSS. chatterbox holds 3 GB of weights and reports 441 MB; its memory is resident but not attributed to the process. Treat every GPU-backed figure as a lower bound, and do not compare a Metal figure against a CPU one.</li>
+  </ul>
+
+  <h2>What the NeuTTS matrix shows</h2>
+  <ul>
+    <li><strong>The best configuration is hidden behind the API.</strong> <code>backbone_device="metal", codec_device="cpu"</code> gives 8% at 0.59×. Setting one device for both silently forces CPU; setting <code>mps</code> for both fails outright, because the ONNX decoder is CPU-only.</li>
+    <li><strong>The closed Metal PR targeted the wrong path.</strong> fp32 on MPS (2.59×) versus CPU (2.58×) is a dead heat — single-token decode in PyTorch eager mode is dispatch-bound, so the GPU never gets enough work per launch. The same weights via GGUF on Metal run at 0.59×, a 4.4× difference that llama.cpp already delivers.</li>
+    <li><strong>The nano GGUF conversions are broken.</strong> nano fp32 scores 9%; its q4 gives 16–17% and its q8 28–31%, identically on CPU and Metal. Device placement changes speed only, which localizes the fault to the conversion itself.</li>
+    <li><strong>q8 is consistently worse than q4</strong> — across two corpora, two devices and three repeat settings. That is backwards for precision and is the clearest single defect in the family.</li>
+    <li><strong>The 2E q4 conversion, by contrast, is excellent</strong> — about one WER point against fp32, where Resemble's costs four to six. The nano failure is not inherent to their quantization approach.</li>
+    <li><strong>They are the smallest models in their class.</strong> Both backbones measure ~0.23B against vibevoice's 1.02B, cosyvoice3's 0.64B and chatterbox's 0.54B. Reaching 8% WER from a quarter of vibevoice's parameters is the most favourable number in this table for Neuphonic, and it was hidden while the column wrongly read 0.5B.</li>
+  </ul>
+
+  <h2>Caveats</h2>
+  <ul>
+    <li><strong>FastPitch is scored with its spoken disclosure removed.</strong> The runtime prepends a spoken AI disclosure to its output, because the model’s own metadata records its voice as a real person’s (LJSpeech, a single reader). The recogniser transcribes that as part of the utterance, which costs it 85.5% WER against the 15.3% shown here, with the disclosure occupying 56% of each clip. It is removed before scoring only — the audio a caller receives still carries it, and the sample above is cropped to the requested sentence. Real-time factor is unaffected: the disclosure inflates synthesis time and audio duration alike, so the ratio is unchanged.</li>
+    <li><strong>Licence is taken from each model's own card, and two of them constrain use.</strong> <strong>F5-TTS is CC-BY-NC-4.0</strong> — non-commercial — which makes it the highest-scoring engine here that cannot be shipped in a product. <strong>NeuTTS 2E carries a custom licence</strong>: free for research, and commercial use permitted only below $5M annual revenue. Worth noting that NeuTTS Air, the previous generation, is Apache-2.0 — the restriction arrived with 2E. Everything else is MIT, Apache-2.0 or CC-BY-4.0. Weights for all of them are publicly downloadable, so "open weight" is true throughout; "open licence" is not.</li>
+    <li><strong>Padding was measured, and it does not distort this table — with one exception.</strong> RTF divides compute by all the audio a model emits, so silence inflates the divisor and pads the score. Every row was re-measured against speech alone: these engines are 79–98% speech, the corrections run 0–22%, and nothing reorders. Hover any underlined RTF figure to see its speech-only value. The exception is <strong>qwen3-tts</strong>, which reads 0.94x but is <strong>1.13x</strong> against speech — it does not in fact keep up with continuous speech, which is the one thing RTF is usually consulted for.</li>
+    <li><strong>macOS system TTS has been withdrawn from the table.</strong> It was measured and scored well, but the row named a device rather than a model. macOS resolves a voice to whichever quality tier that machine happens to have downloaded, and Compact, Enhanced and Premium are different models rather than bitrates of one — hundreds of megabytes apart. Every other row is pinned to a file that can be fetched and hashed; that one described this laptop. Its measurements are retained in the raw data.</li>
+    <li>Autoregressive engines are averaged over two independent passes of the corpus (168 samples each); the feed-forward engines, whose run-to-run variation is far smaller, remain at one pass (84). Differences under roughly 2 points are still not resolvable at this sample size.</li>
+    <li>Round-trip WER measures intelligibility, not naturalness, expressiveness or speaker similarity — the axes on which LM-backed engines are actually sold. This benchmark systematically understates them.</li>
+    <li>One English corpus, one ASR model, one machine. Piper's lead is large enough to survive that; the mid-table ordering is not.</li>
+  </ul>
+</div>
+
+<script>
+  (function () {
+    const table = document.querySelector("table");
+    const tbody = table.querySelector("tbody");
+    const heads = [...table.querySelectorAll("th")];
+    // Remember the published order so a third click restores it
+    const original = [...tbody.rows];
+
+    function key(row, i) {
+      const cell = row.cells[i];
+      const raw = cell.dataset.sort ?? cell.textContent.trim();
+      const n = Number(raw);
+      return Number.isNaN(n) ? raw.toLowerCase() : n;
+    }
+
+    function sortBy(i, dir) {
+      const rows = [...tbody.rows].sort((a, b) => {
+        const x = key(a, i), y = key(b, i);
+        if (x === y) return 0;
+        return (x < y ? -1 : 1) * (dir === "ascending" ? 1 : -1);
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function activate(i) {
+      const th = heads[i];
+      const current = th.getAttribute("aria-sort");
+      // ascending -> descending -> back to the published ordering
+      const next = current === "none" ? "ascending"
+                 : current === "ascending" ? "descending" : "none";
+      heads.forEach(h => h.setAttribute("aria-sort", "none"));
+      th.setAttribute("aria-sort", next);
+      if (next === "none") original.forEach(r => tbody.appendChild(r));
+      else sortBy(i, next);
+    }
+
+    heads.forEach((th, i) => {
+      th.addEventListener("click", () => activate(i));
+      th.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(i); }
+      });
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    // Decoded up front rather than played through an <audio> element. "canplaythrough" is a
+    // heuristic about download rate, and on a data: URI it fires almost immediately while the
+    // MP3 is still being decoded, so playback began mid-decode and swallowed the first word.
+    // decodeAudioData resolves only once the whole clip is PCM in memory, so a source that has
+    // started is guaranteed to have every sample, including the first.
+    const cache = new Map();          // data URI -> AudioBuffer
+    let audioCtx = null;
+    let current = null;               // { btn, source, token }
+
+    function ctx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    // macOS powers its output device down when idle, and the first sound after that loses the
+    // couple of hundred milliseconds the device spends spinning up - which is below the browser,
+    // so decoding early does not help. Push a short silent buffer through on the first hint of
+    // interaction so the device is already awake by the time a clip is clicked.
+    const DEVICE_WAKE = 0.5;
+    let primed = false;
+    function primeDevice() {
+      if (primed) return;
+      const ac = ctx();
+      // Only counts as primed once the context is really running. A hover is not a user gesture,
+      // so resume() can be refused there; leaving primed false lets the click retry it.
+      const push = () => {
+        if (primed || ac.state !== "running") return;
+        primed = true;
+        const silence = ac.createBufferSource();
+        silence.buffer = ac.createBuffer(1, Math.ceil(ac.sampleRate * DEVICE_WAKE), ac.sampleRate);
+        silence.connect(ac.destination);
+        silence.start();
+      };
+      if (ac.state === "suspended") ac.resume().then(push).catch(() => {});
+      else push();
+    }
+
+    function toArrayBuffer(uri) {
+      const binary = atob(uri.slice(uri.indexOf(",") + 1));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    function decode(uri) {
+      if (cache.has(uri)) return Promise.resolve(cache.get(uri));
+      return ctx().decodeAudioData(toArrayBuffer(uri))
+        .then(buffer => { cache.set(uri, buffer); return buffer; });
+    }
+
+    function icon(btn, glyph) { btn.firstElementChild.innerHTML = glyph; }
+
+    function reset() {
+      if (!current) return;
+      const { btn, source } = current;
+      current = null;
+      btn.classList.remove("playing", "loading");
+      icon(btn, "&#9654;");
+      if (source) {
+        source.onended = null;
+        try { source.stop(); } catch (e) { /* already ended */ }
+      }
+    }
+
+    // Once one clip has been decoded the context is live, so warm the rest while the browser is
+    // idle and no other row pays the decode cost on its first click either
+    let warmed = false;
+    function warmAll() {
+      if (warmed) return;
+      warmed = true;
+      const idle = window.requestIdleCallback || (fn => setTimeout(fn, 300));
+      idle(() => document.querySelectorAll("button.play")
+        .forEach(b => decode(b.dataset.src).catch(() => {})));
+    }
+
+    // Hovering a play button, or touching the page at all, buys the device a head start
+    document.addEventListener("pointerdown", primeDevice);
+
+    document.querySelectorAll("button.play").forEach(btn => {
+      btn.addEventListener("pointerenter", primeDevice);
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const uri = btn.dataset.src;
+        const same = current && current.btn === btn;
+        reset();
+        if (same) return;                       // second click on the same row stops it
+
+        const ac = ctx();
+        primeDevice();                          // a click is a gesture, so this one always lands
+
+        const token = {};
+        current = { btn, source: null, token };
+        btn.classList.add("playing");
+        if (!cache.has(uri)) btn.classList.add("loading");
+        icon(btn, "&#9632;");
+
+        decode(uri).then(buffer => {
+          // A different row may have been clicked while this one was decoding
+          if (!current || current.token !== token) return;
+          const source = ac.createBufferSource();
+          source.buffer = buffer;
+          source.connect(ac.destination);
+          source.onended = () => { if (current && current.source === source) reset(); };
+          current.source = source;
+          btn.classList.remove("loading");
+          // Start a beat in the future rather than at currentTime, so anything the device swallows
+          // while it wakes is scheduled silence instead of the opening phoneme
+          source.start(ac.currentTime + DEVICE_WAKE);
+          warmAll();
+        }).catch(reset);
+      });
+    });
+  })();
+</script>

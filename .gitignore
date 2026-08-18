@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.json.bak
+
+# Outputs. Everything here regenerates them.
+tools/sweep_*.json
+tools/neutts_matrix_*.json
+tools/durations.json
+tools/squim_scores.json
+tools/audio_quality.json
+tts-benchmark.html
+tts-benchmark-export.zip
