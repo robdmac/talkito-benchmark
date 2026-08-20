@@ -25,7 +25,7 @@ META = {
  "kittentts-nano":   ("-",     "2026-02", "The fp32 middle size of KittenTTS's four. Not the default - talkito loads mini."),
  "kittentts-nano-int8": ("-",  "2026-02", "int8 of the same nano weights at 26 MB. Non-autoregressive, so quantisation cannot cause the sampling failures seen in the LM models."),
  "kittentts-mini":   ("-",     "2026-02", "The largest KittenTTS, and what talkito loads by default."),
- "chatterbox":       ("25 Hz", "2025-04", "MIT, and the best of the chatterbox family on both axes. PerTh watermarking; own venv."),
+ "chatterbox":       ("25 Hz", "2025-04", "MIT, and the family's best PESQ at 3.61 - but turbo is more accurate and 4x faster. PerTh watermarking; own venv."),
  "kokoro":           ("-",     "2024-12", "Deterministic timing. Weakest on very short utterances."),
  "system":           ("-",     "-",       "Ships with macOS. Nothing to install."),
  "fastpitch":        ("-",     "2021-06", "Non-autoregressive, 120 MB. Output carries a spoken AI disclosure, removed before scoring."),
@@ -45,8 +45,8 @@ META = {
  "bark":             ("-",     "2023-04", "Unusable. Invents lead-in words never present in the input."),
  "qwen3-tts":        ("12 Hz", "2026-01", "Alibaba's 0.6B at a 12 Hz codec - the direct architectural rival."),
  "nt-2e-q8-cpu":     ("50 Hz", "2026-07", "The most accurate 2E configuration at 5%, and absent from this table until now - Neuphonic publish a Q8_0 that was never measured."),
- "nt-2e-q8-metal":   ("50 Hz", "2026-07", "Q8 on Metal, 3.5 points behind the same weights on CPU - the same split the q4 pair shows."),
- "nt-2e-q4-metal":   ("50 Hz", "2026-07", "The fastest 2E configuration at 0.46x. Reachable only via an undocumented split-device call."),
+ "nt-2e-q8-metal":   ("50 Hz", "2026-07", "The fastest 2E configuration at 0.46x, but 3.5 points behind the same weights on CPU."),
+ "nt-2e-q4-metal":   ("50 Hz", "2026-07", "0.48x, just behind q8-metal. Reachable only via an undocumented split-device call."),
  "nt-2e-q4-cpu":     ("50 Hz", "2026-07", "What you get by default. ~1 point behind fp32 - an excellent conversion."),
  "nt-2e-fp32-cpu":   ("50 Hz", "2026-07", "4.4x slower than the same weights quantized on Metal."),
  "nt-2e-fp32-mps":   ("50 Hz", "2026-07", "A dead heat with CPU: the path PR #123 targeted has nothing to win."),
@@ -69,6 +69,10 @@ META = {
  "tada-1b":           ("-",     "2025-09", "1B multilingual. Middling accuracy, unremarkable throughout."),
  "tada-3b":           ("-",     "2025-09", "3B sibling of tada-1b: three times the weights, three points better."),
  "dots-tts":          ("-",     "2025-06", "4.4 GB f16 and 11x real time, for 6% WER - mid-pack accuracy."),
+ "qwen3-tts-vd":     ("12 Hz", "2026-01", "Qwen3-TTS VoiceDesign at 1.7B: the speaker comes from a written description, not a reference clip."),
+ "orpheus-q4":       ("-",     "2025-03", "Llama-3.2-3B finetune over SNAC: the largest LM backbone here, and the slowest at 8.1x real time."),
+ "orpheus-q8":       ("-",     "2025-03", "The same 3B at q8. Only three quants are published and none reach real time."),
+ "supertonic":       ("-",     "2026-03", "99M params across four fp32 ONNX graphs, so 380 MB on disk despite the parameter count. Native 44.1 kHz, resampled to 24 kHz here. Weights are OpenRAIL-M, not the MIT of the sample code."),
  "xtts":             ("-",     "2023-11", "Coqui XTTS v2. Clones from a reference clip; scored against a piper sample as reference."),
 }
 # Licence as declared on each model's own card, not inferred from the runtime that serves it. Two
@@ -86,6 +90,11 @@ LICENSE = {
  "fastpitch": "CC-BY-4.0",
  # Non-commercial. The best-scoring model here that cannot be shipped in a product.
  "f5-tts": "CC-BY-NC-4.0", "xtts": "CPML (non-commercial)",
+ # Code is MIT but the weights are not: OpenRAIL-M carries use restrictions, which is the half
+ # that matters to someone choosing a model from this table.
+ "supertonic": "OpenRAIL-M",
+ "orpheus-q4": "Apache-2.0", "orpheus-q8": "Apache-2.0",
+ "qwen3-tts-vd": "Apache-2.0",
  # Custom "NeuTTS License": free for research, commercial use permitted only below $5M annual
  # revenue. Air was Apache-2.0; 2E is not.
  "nt-2e-q8-cpu": "NeuTTS, under $5M", "nt-2e-q8-metal": "NeuTTS, under $5M",
@@ -107,7 +116,7 @@ LIBS = {"piper":(391,338),"kittentts":(764,608),"chatterbox":(1200,3573),"kokoro
 # high-water mark (/usr/bin/time -l) with --durations-only, so no recogniser is loaded
 # and no sampling can miss an allocation spike. Older entries were measured another way
 # and are not strictly comparable.
-NEU_RSS = {"bananamind-tts":246,"bark":635,"chatterbox-turbo":1724,"cosyvoice3-rl":1023,"dots-tts":5056,"f5-tts":1169,"fastpitch":376,"kittentts-micro":681,"kittentts-mini":785,"kittentts-nano":616,"kittentts-nano-int8":589,"mms-tts":742,"nt-2e-fp32-cpu":2025,"nt-2e-fp32-mps":1116,"nt-2e-q4-cpu":1862,"nt-2e-q4-metal":1734,"nt-2e-q8-cpu":2048,"nt-2e-q8-metal":1895,"nt-air-fp32-cpu":0,"nt-air-fp32-mps":0,"nt-air-q4-cpu":1988,"nt-air-q4-metal":1895,"nt-air-q8-cpu":2388,"nt-air-q8-metal":2058,"nt-nano-fp32-cpu":2210,"nt-nano-fp32-mps":2253,"nt-nano-q4-cpu":1895,"nt-nano-q4-metal":1542,"nt-nano-q8-cpu":1886,"nt-nano-q8-metal":1598,"omnivoice":2275,"parler-tts":2285,"tada-1b":3102,"tada-3b":8559,"vibevoice-1.5b":2474,"xtts":4075,"zonos":2495}
+NEU_RSS = {"bananamind-tts":246,"bark":635,"chatterbox-turbo":1724,"cosyvoice3-rl":1023,"dots-tts":5056,"f5-tts":1169,"fastpitch":376,"kittentts-micro":681,"kittentts-mini":785,"kittentts-nano":616,"kittentts-nano-int8":589,"mms-tts":742,"nt-2e-fp32-cpu":2025,"nt-2e-fp32-mps":1116,"nt-2e-q4-cpu":1862,"nt-2e-q4-metal":1734,"nt-2e-q8-cpu":2048,"nt-2e-q8-metal":1895,"nt-air-fp32-cpu":0,"nt-air-fp32-mps":0,"nt-air-q4-cpu":1988,"nt-air-q4-metal":1895,"nt-air-q8-cpu":2388,"nt-air-q8-metal":2058,"nt-nano-fp32-cpu":2210,"nt-nano-fp32-mps":2253,"nt-nano-q4-cpu":1895,"nt-nano-q4-metal":1542,"nt-nano-q8-cpu":1886,"nt-nano-q8-metal":1598,"omnivoice":2275,"orpheus-q4":2762,"parler-tts":2285,"qwen3-tts-vd":3368,"supertonic":882,"tada-1b":3102,"tada-3b":8559,"vibevoice-1.5b":2474,"xtts":4075,"zonos":2495}
 
 def mb(v):
     if not v: return "-"
@@ -209,7 +218,13 @@ for path in STATES:
 # 59% implies a model that speaks badly; this one is not attempting the sentence, so its WER is not
 # the same measurement as everyone else's and does not belong beside them. Its measurements stay in
 # the raw data and its audio still ships.
-EXCLUDED = {"system", "kittentts", "parler-tts"}
+# dia is excluded on a measurement fault, not a model one. Its output is quantised into ~2.2s
+# blocks -- one per dialogue turn -- and a turn is capped there however much text it holds, so
+# 198 characters of input yields 4.4s of audio where the text is roughly 12s of speech. Long
+# phrases truncate mid-word ("Running tests now, please wait a moment" comes back as "Running
+# test now, please"), short ones fill the block with silence or a repeated token. The corpus
+# score of 78.5% measures that cap. Raising --max-new-tokens from 512 to 2048 does not move it.
+EXCLUDED = {"system", "kittentts", "parler-tts", "dia"}
 EXCLUDED_PREFIXES = ("nt-nano-", "nt-air-", "neutts-nano")
 
 # Rows whose RTF comes from the timing-only pass in durations.json instead of the scored sweep.

@@ -148,8 +148,14 @@ CRISPASR_MODELS: Dict[str, Dict[str, Any]] = {
               'port': 8802, 'normalize': True},
     'qwen3-tts-1.7b': {'backend': 'qwen3-tts-1.7b-base', 'model': 'auto', 'codec': None,
                      'port': 8803, 'normalize': True},
+    # VoiceDesign conditions on a written description rather than a reference clip. The wording is
+    # deliberately plain: an expressive brief would be measuring how well the description is
+    # followed, where every other row is measuring whether the words come out intelligible.
     'qwen3-tts-vd': {'backend': 'qwen3-tts-1.7b-voicedesign', 'model': 'auto', 'codec': None,
-                   'port': 8804, 'normalize': True},
+                   'port': 8804, 'normalize': True,
+                   'instruct': os.environ.get(
+                       'QWEN3_TTS_VD_INSTRUCT',
+                       'A clear neutral female voice speaking at a natural, even pace.')},
     'dia': {'backend': 'dia', 'model': 'auto', 'codec': None,
           'port': 8805, 'normalize': True},
     'dots-tts': {'backend': 'dots-tts', 'model': 'auto', 'codec': None,
@@ -524,6 +530,59 @@ class KittenVariantProvider(TTSProvider):
             return None
 
 
+_supertonic_model = None
+_supertonic_lock = threading.Lock()
+
+
+class SupertonicProvider(TTSProvider):
+    """Supertonic: 99M params, ONNX, flow matching, and the only 44.1 kHz engine here.
+
+    Not autoregressive, so it has no sampler and none of the runaway or early-stop failures the
+    LM engines show. Output is resampled to 24 kHz to match every other row: the corpus is scored
+    through a 16 kHz recogniser, so keeping 44.1 kHz would only change the resampling path taken
+    to reach it, while making PESQ incomparable with the rest of the table.
+    """
+
+    def synthesize(self, text: str) -> Optional[Tuple[bytes, str]]:
+        global _supertonic_model
+        try:
+            import io
+            import numpy as np
+            import soundfile as sf
+
+            if not text or not text.strip():
+                return None
+
+            with _supertonic_lock:
+                if _supertonic_model is None:
+                    log_message("INFO", "Loading supertonic (supertonic-3)")
+                    from supertonic import TTS as SupertonicTTS
+                    model = SupertonicTTS(auto_download=True)
+                    # Style vectors are per-voice and cheap; caching one keeps every phrase on
+                    # the same speaker, which is what makes the corpus comparable run to run.
+                    _supertonic_model = (model, model.get_voice_style(
+                        str(self.config.get('voice') or 'F1')))
+                model, style = _supertonic_model
+
+            out = model.synthesize(text=text, voice_style=style, lang='en')
+            audio = np.asarray(out[0] if isinstance(out, tuple) else out,
+                               dtype=np.float32).squeeze()
+            if audio.size == 0:
+                return None
+
+            import scipy.signal as _sig
+            target = 24000
+            audio = _sig.resample_poly(audio, target, 44100).astype(np.float32)
+            buf = io.BytesIO()
+            # ONNX vocoders carry no output constraint and PCM16 wraps rather than saturates,
+            # the same reason the KittenTTS rows are clipped here.
+            sf.write(buf, np.clip(audio, -1.0, 1.0), target, format='WAV')
+            return buf.getvalue(), ".wav"
+        except Exception as e:
+            log_message("ERROR", f"supertonic synthesis error: {e}")
+            return None
+
+
 class NeuTTSVariantProvider(TTSProvider):
     """A specific NeuTTS backbone, so the quantization ladder can be compared directly."""
 
@@ -679,6 +738,13 @@ def _get_crispasr_server(name: str) -> Optional['_CrispASRServer']:
         if settings.get('model_quant'):
             command += ['--model-quant', settings['model_quant']]
 
+        # VoiceDesign backends take a text description instead of a reference clip, and refuse to
+        # synthesize without one. The description is fixed in the registry rather than varied per
+        # phrase: it is the speaker identity, so changing it mid-corpus would be measuring several
+        # different voices as though they were one.
+        if settings.get('instruct'):
+            command += ['--instruct', settings['instruct']]
+
         # Models with no built-in speaker can only synthesize by cloning a reference
         voice = settings.get('voice')
         if voice:
@@ -693,7 +759,16 @@ def _get_crispasr_server(name: str) -> Optional['_CrispASRServer']:
             # Measurement purity: the disclosure prefix lands in the transcript, and the watermark
             # perturbs the very audio the ASR scores
             command += ['--accept-marking-responsibility', '--no-spoken-disclaimer', '--no-watermark']
-        process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Keep the server's own output. Discarding it means a failure reaches the caller as
+        # "server exited during startup" or a bare HTTP 500, and the actual reason -- a tensor
+        # naming mismatch, a missing voice, an unsupported sample rate -- is only recoverable by
+        # relaunching the binary by hand. That cost three separate diagnoses here.
+        log_dir = os.path.join(tempfile.gettempdir(), 'crispasr-logs')
+        os.makedirs(log_dir, exist_ok=True)
+        server_log = os.path.join(log_dir, f'{name}.log')
+        log_message("INFO", f"{name} server log: {server_log}")
+        handle = open(server_log, 'w')
+        process = subprocess.Popen(command, stdout=handle, stderr=subprocess.STDOUT)
 
         deadline = time.time() + CRISPASR_START_TIMEOUT
         while time.time() < deadline:
@@ -813,6 +888,7 @@ BENCHMARK_PROVIDERS = {
     'chatterbox-q8': ChatterboxQ8Provider,
     'chatterbox-q4': ChatterboxQ4Provider,
     'pocket-tts': PocketTTSProvider,
+    'supertonic': SupertonicProvider,
     **{key: _make_crispasr_provider(key)
        for key in ('miotts', 'vibevoice', 'cosyvoice3', 'csm', 'speecht5', 'bark',
                    'qwen3-tts', 'orpheus-q4', 'orpheus-q8', 'fastpitch', 'f5-tts', 'kugelaudio',
