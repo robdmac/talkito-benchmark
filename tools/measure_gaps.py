@@ -35,6 +35,8 @@ warnings.filterwarnings("ignore")
 # mid-run and takes the whole sweep down with it, which is exactly what happened once.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paths
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Ordered by measured RTF: minutes of synthesis, roughly, for the 84-phrase corpus.
@@ -104,7 +106,7 @@ def squim_pesq(paths, model, strip=False):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="/Users/robertmacrae/.claude/jobs/0df08634/tmp/gaps")
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(HERE), "measurements", "gaps"))
     ap.add_argument("--providers", default=",".join(TARGETS))
     # PESQ is a mean over clips, so a subset trades a little precision for hours on the models
     # that run at 10x real time. Recorded in the result as corpus_subset so an estimate is never

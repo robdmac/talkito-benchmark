@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)  # the benchmark repo: FINDINGS.md and the page live here
 SAMPLES = os.environ.get("TTS_SAMPLE_DIR",
-    "/Users/robertmacrae/.cache/talkito/benchmark-samples/".rstrip("/"))
+    os.path.join(os.path.expanduser("~"), ".cache", "talkito", "benchmark-samples"))
 
 # Rows the page deliberately leaves out; their audio still ships, kept apart so the archive does
 # not imply they are part of the comparison

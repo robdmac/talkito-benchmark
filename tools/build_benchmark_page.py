@@ -122,8 +122,9 @@ def mb(v):
     if not v: return "-"
     return f"{v/1024:.1f} GB" if v >= 1024 else f"{v} MB"
 
-SAMPLES = os.environ.get("TTS_SAMPLE_DIR",
-    "/Users/robertmacrae/.cache/talkito/benchmark-samples/mp3".rstrip("/"))
+SAMPLES = os.environ.get(
+    "TTS_SAMPLE_DIR",
+    os.path.join(os.path.expanduser("~"), ".cache", "talkito", "benchmark-samples", "mp3"))
 
 
 def sample_uri(name):

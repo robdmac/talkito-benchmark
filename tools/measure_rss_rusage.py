@@ -26,6 +26,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paths
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = paths.TALKITO
 
 TARGETS = ["fastpitch", "mms-tts", "bananamind-tts", "nt-2e-q8-metal", "nt-2e-q8-cpu",
@@ -47,7 +49,7 @@ def rusage_peak(prov):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="/Users/robertmacrae/.claude/jobs/0df08634/tmp/rss2")
+    ap.add_argument("--out", default=os.path.join(os.path.dirname(HERE), "measurements", "rss"))
     ap.add_argument("--providers", default=",".join(TARGETS))
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
