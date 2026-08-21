@@ -33,8 +33,7 @@ import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(HERE)
-HARNESS = os.path.join(REPO, "tests-repo", "test_tts_asr_roundtrip.py")
+import paths
 
 PROVIDERS = [
     "piper", "kokoro", "kittentts", "neutts2e",
@@ -216,7 +215,7 @@ def run_unit(provider, category, repeat, indices=None, asr_model=None):
     """Run one provider against one category (or a chunk of it) and return its scores."""
     fd, out_path = tempfile.mkstemp(suffix=".json")
     os.close(fd)
-    command = [sys.executable, "-u", HARNESS, "--tts-provider", provider,
+    command = [sys.executable, "-u", paths.HARNESS, "--tts-provider", provider,
                "--category", category, "--repeat", str(repeat), "--quiet", "--json", out_path]
     if asr_model:
         command += ["--asr-model", asr_model]
@@ -228,7 +227,7 @@ def run_unit(provider, category, repeat, indices=None, asr_model=None):
     load_before = os.getloadavg()[0]
     swap_free_before = _swap_free_mb()
     started = time.time()
-    proc = subprocess.run(command, capture_output=True, text=True, cwd=REPO)
+    proc = subprocess.run(command, capture_output=True, text=True, cwd=paths.TALKITO)
     elapsed = time.time() - started
     load = max(load_before, os.getloadavg()[0])
     # Swap exhaustion slows synthesis several-fold and creeps up as large models are loaded and
@@ -327,7 +326,7 @@ def main():
         summarize(state, args.repeat)
         return 0
 
-    sys.path.insert(0, os.path.join(REPO, "tests-repo"))
+    sys.path.insert(0, paths.TESTS_REPO)
     import test_tts_asr_roundtrip as harness  # noqa: E402
 
     all_units = [(p, c, key, idx) for p in PROVIDERS for c in harness.CATEGORIES

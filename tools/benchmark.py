@@ -31,6 +31,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -92,8 +93,94 @@ def available():
 
 
 def pick(models):
-    """Numbered checklist, everything ticked. Returns the chosen names."""
+    """Arrow-key checklist, everything ticked. Returns the chosen names.
+
+    Matches talkito's own menus (cli.py show_interactive_menu): raw mode, escape sequences for the
+    arrows, and a redraw that walks the cursor back up rather than clearing the screen, so the
+    scrollback above the menu survives.
+
+    Falls back to the typed form when stdin is not a terminal, which is what cron and a piped
+    invocation get. The fallback also refuses to treat EOF as confirmation: piping input ends in
+    EOF, and reading that as "yes" once started a multi-hour run that deleted the measurements it
+    was replacing.
+    """
     chosen = {n for n, _ in models}
+    if not sys.stdin.isatty():
+        return _pick_typed(models, chosen)
+
+    import termios
+    import tty
+
+    def get_key():
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            key = sys.stdin.read(1)
+            if key == "\x1b":
+                key += sys.stdin.read(2)
+            return key
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
+    selected = 0
+    # The list is longer than most terminals, so it scrolls with the cursor rather than printing
+    # forty rows on every keypress.
+    window = max(5, min(len(models), (shutil.get_terminal_size((80, 24)).lines - 8)))
+    top = 0
+    drawn = 0
+
+    def render(redraw=False):
+        nonlocal top, drawn
+        if selected < top:
+            top = selected
+        elif selected >= top + window:
+            top = selected - window + 1
+        if redraw and drawn:
+            print(f"\033[{drawn}A", end="")
+
+        total = sum(s for n, s in models if n in chosen and s)
+        lines = ["", "  models to benchmark  (↑↓ move, space toggles, a=all, n=none, "
+                     "Enter runs, q quits)", ""]
+        for i in range(top, min(top + window, len(models))):
+            name, secs = models[i]
+            cursor = "➤" if i == selected else " "
+            box = "x" if name in chosen else " "
+            cost = f"{secs / 60:5.0f} min" if secs else "    ?   "
+            lines.append(f"  {cursor} [{box}] {i + 1:>2}. {name:<22}{cost}")
+        more = len(models) - (top + window)
+        lines.append(f"      … {more} more below" if more > 0 else "")
+        lines.append(f"  {len(chosen)} selected, about {total / 3600:.1f} h of synthesis")
+        for line in lines:
+            print(f"\033[2K{line}")
+        drawn = len(lines)
+
+    render()
+    while True:
+        key = get_key()
+        if key == "\x1b[A":
+            selected = (selected - 1) % len(models)
+        elif key == "\x1b[B":
+            selected = (selected + 1) % len(models)
+        elif key == " ":
+            chosen.symmetric_difference_update({models[selected][0]})
+        elif key in ("a", "A"):
+            chosen = {n for n, _ in models}
+        elif key in ("n", "N"):
+            chosen = set()
+        elif key in ("\r", "\n"):
+            print()
+            return sorted(chosen)
+        elif key in ("q", "Q", "\x03"):
+            print()
+            sys.exit(0)
+        else:
+            continue
+        render(redraw=True)
+
+
+def _pick_typed(models, chosen):
+    """Typed fallback for a non-terminal stdin: numbers, ranges and substrings."""
     while True:
         print("\n  models to benchmark\n")
         total = 0.0
@@ -108,9 +195,6 @@ def pick(models):
         try:
             reply = input("  > ").strip()
         except EOFError:
-            # Not "run everything". Piping input in ends with EOF, so treating it as confirmation
-            # starts a multi-hour run that also deletes the measurements it is replacing -- which
-            # is exactly what happened the first time this was tested from a pipe.
             sys.exit("\n  no confirmation, nothing run")
         if not reply:
             return sorted(chosen)
@@ -123,7 +207,6 @@ def pick(models):
             chosen = set()
             continue
         for token in reply.replace(",", " ").split():
-            hits = []
             if re.fullmatch(r"\d+-\d+", token):
                 lo, hi = (int(x) for x in token.split("-"))
                 hits = [models[i - 1][0] for i in range(lo, hi + 1) if 1 <= i <= len(models)]
@@ -135,8 +218,6 @@ def pick(models):
                     print(f"  no model matches {token!r}")
             for name in hits:
                 chosen.symmetric_difference_update({name})
-    return sorted(chosen)
-
 
 def busy():
     """True if something heavy is already running, since RTF is wall-clock sensitive."""
