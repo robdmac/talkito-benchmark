@@ -347,6 +347,8 @@ head = "      <tr>\n" + "\n".join(
 page = open(PAGE).read()
 page = re.sub(r'<thead>.*?</thead>', f'<thead>\n{head}\n    </thead>', page, flags=re.S)
 page = re.sub(r'<tbody>.*?</tbody>', '<tbody>\n' + "\n".join(out) + '\n    </tbody>', page, flags=re.S)
+page = re.sub(r'<title>[^<]*</title>',
+              f'<title>TTS Engine Benchmark \u2014 {len(rows)} configurations</title>', page)
 page = re.sub(r'<h1>[^<]*</h1>', f'<h1>{len(rows)} text-to-speech configurations, measured end to end</h1>', page)
 open(PAGE, "w").write(page)
 print(f"  wrote {len(rows)} rows")

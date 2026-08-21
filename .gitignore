@@ -10,3 +10,6 @@ tools/squim_scores.json
 tools/audio_quality.json
 tts-benchmark.html
 tts-benchmark-export.zip
+
+# Measurement output, written beside the repo rather than into a session temp dir
+measurements/
