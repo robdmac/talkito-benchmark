@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore")
 # mid-run and takes the whole sweep down with it, which is exactly what happened once.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paths
-sys.path.insert(0, paths.TESTS_REPO)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Ordered by measured RTF: minutes of synthesis, roughly, for the 84-phrase corpus.
 TARGETS = ["fastpitch", "mms-tts", "bananamind-tts", "nt-2e-q8-metal", "nt-2e-q8-cpu",

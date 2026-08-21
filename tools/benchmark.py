@@ -286,8 +286,13 @@ def main():
     if running:
         print(f"\n  warning: {', '.join(running)} already running. RTF is wall-clock and will "
               f"read high.")
-        if input("  continue anyway? [y/N] ").strip().lower() != "y":
-            sys.exit(0)
+        try:
+            if input("  continue anyway? [y/N] ").strip().lower() != "y":
+                sys.exit(0)
+        except EOFError:
+            # No terminal to ask. Declining is the safe reading: the warning exists because RTF is
+            # wall-clock, and a scripted run that ignores it silently records inflated timings.
+            sys.exit("  not a terminal, declining rather than measuring under load")
 
     if not args.keep:
         print(f"\n  removing previous measurements for {len(names)} model(s)...", flush=True)

@@ -22,11 +22,16 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 BENCHMARK_ROOT = os.path.dirname(HERE)
 
-HARNESS_REL = os.path.join("tests-repo", "test_tts_asr_roundtrip.py")
+# What proves a directory is a talkito checkout. The package itself, since the harness now
+# lives here rather than there.
+TALKITO_MARKER = os.path.join("talkito", "tts.py")
+
+# The harness is part of this repo now, so it is found rather than searched for.
+HARNESS = os.path.join(HERE, "test_tts_asr_roundtrip.py")
 
 
 def _valid(path):
-    return path and os.path.exists(os.path.join(path, HARNESS_REL))
+    return path and os.path.exists(os.path.join(path, TALKITO_MARKER))
 
 
 def talkito_root():
@@ -36,7 +41,7 @@ def talkito_root():
     # would look entirely normal -- the worst kind of wrong answer this module can give.
     override = os.environ.get("TALKITO_ROOT")
     if override and not _valid(override):
-        raise RuntimeError(f"TALKITO_ROOT={override!r} does not contain {HARNESS_REL}")
+        raise RuntimeError(f"TALKITO_ROOT={override!r} does not contain {TALKITO_MARKER}")
 
     tried = []
     for candidate in (override,
@@ -50,7 +55,7 @@ def talkito_root():
             return candidate
     raise RuntimeError(
         "cannot find talkito. Set TALKITO_ROOT to a checkout containing "
-        f"{HARNESS_REL}.\nTried:\n  " + "\n  ".join(tried))
+        f"{TALKITO_MARKER}.\nTried:\n  " + "\n  ".join(tried))
 
 
 def __getattr__(name):
@@ -61,8 +66,4 @@ def __getattr__(name):
     """
     if name == "TALKITO":
         return talkito_root()
-    if name == "HARNESS":
-        return os.path.join(talkito_root(), HARNESS_REL)
-    if name == "TESTS_REPO":
-        return os.path.join(talkito_root(), os.path.dirname(HARNESS_REL))
     raise AttributeError(name)

@@ -326,7 +326,7 @@ def main():
         summarize(state, args.repeat)
         return 0
 
-    sys.path.insert(0, paths.TESTS_REPO)
+    sys.path.insert(0, HERE)
     import test_tts_asr_roundtrip as harness  # noqa: E402
 
     all_units = [(p, c, key, idx) for p in PROVIDERS for c in harness.CATEGORIES

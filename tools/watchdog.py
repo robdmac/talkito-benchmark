@@ -28,8 +28,10 @@ import sys
 import time
 
 
-def measure(pattern, by_count):
-    paths = globmod.glob(os.path.expanduser(pattern))
+def measure(patterns, by_count):
+    paths = []
+    for pattern in patterns:
+        paths += globmod.glob(os.path.expanduser(pattern))
     if by_count:
         return float(len(paths))
     return float(sum(os.path.getsize(p) for p in paths if os.path.exists(p)))
@@ -46,7 +48,9 @@ def alive(pid):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--glob", required=True, help="files whose size (or count) means progress")
+    ap.add_argument("--glob", required=True, action="append",
+                    help="files whose size (or count) means progress; repeatable, "
+                         "so a download and the sweep that follows it can share one watch")
     ap.add_argument("--pid", type=int, help="process to watch; exits when it does")
     ap.add_argument("--stall-minutes", type=float, default=10.0)
     ap.add_argument("--interval", type=float, default=30.0)
