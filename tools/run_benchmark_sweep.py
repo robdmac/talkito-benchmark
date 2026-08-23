@@ -117,7 +117,7 @@ PROVIDER_META = {
     "outetts":           ("ar-lm", "1B", 1270),
     "lfm2-audio":        ("ar-lm", "1.5B", 1600),
     "vibevoice-1.5b":    ("ar-lm", "1.5B", 1600),
-    "voxcpm2-tts":       ("ar-lm", "-", 1600),
+    "voxcpm2-tts":       ("ar-lm", "0.5B", 1611),
     "zonos":             ("ar-lm", "1.6B", 1600),
     "vibevoice-bitnet":  ("ar-lm", "1.5B", 1600),
     "tada-1b":           ("ar-lm", "1B", 1700),

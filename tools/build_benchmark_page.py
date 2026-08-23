@@ -69,6 +69,8 @@ META = {
  "tada-1b":           ("-",     "2025-09", "1B multilingual. Middling accuracy, unremarkable throughout."),
  "tada-3b":           ("-",     "2025-09", "3B sibling of tada-1b: three times the weights, three points better."),
  "dots-tts":          ("-",     "2025-06", "4.4 GB f16 and 11x real time, for 6% WER - mid-pack accuracy."),
+ "pocket-tts":       ("-",     "2026-01", "Kyutai Pocket TTS, 100M parameters. Faster than real time in 457 MB of peak RSS. Clones from the piper sample; with no reference it scores 0/70 with 42 runaways."),
+ "voxcpm2-tts":      ("-",     "2024-12",       "OpenBMB VoxCPM on MiniCPM-4: tokenizer-free, modelling continuous speech space rather than discrete acoustic tokens. Upstream claim is 0.17x on GPU; this is q4_k on an M2. Clones from the piper sample."),
  "qwen3-tts-vd":     ("12 Hz", "2026-01", "Qwen3-TTS VoiceDesign at 1.7B: the speaker comes from a written description, not a reference clip."),
  "orpheus-q4":       ("-",     "2025-03", "Llama-3.2-3B finetune over SNAC: the largest LM backbone here, and the slowest at 8.1x real time."),
  "orpheus-q8":       ("-",     "2025-03", "The same 3B at q8. Only three quants are published and none reach real time."),
@@ -93,6 +95,7 @@ LICENSE = {
  # Code is MIT but the weights are not: OpenRAIL-M carries use restrictions, which is the half
  # that matters to someone choosing a model from this table.
  "supertonic": "OpenRAIL-M",
+ "indextts": "Apache-2.0", "pocket-tts": "CC-BY-4.0", "voxcpm2-tts": "Apache-2.0",
  "orpheus-q4": "Apache-2.0", "orpheus-q8": "Apache-2.0",
  "qwen3-tts-vd": "Apache-2.0",
  # Custom "NeuTTS License": free for research, commercial use permitted only below $5M annual
