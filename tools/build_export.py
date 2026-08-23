@@ -150,12 +150,29 @@ HOW TO READ IT
                 annual revenue. "?" means no licence could be verified from the card.
 
 BACKENDS THAT DID NOT WORK
-  Twelve of the engines tried produced nothing usable and are absent from the table: indextts,
-  mini-omni2, outetts, lfm2-audio, voxcpm2-tts, vibevoice-bitnet, qwen3-tts-1.7b-base,
-  qwen3-tts-1.7b-voicedesign, dia, moss-tts, moss-tts-local. Some returned no audio at all;
-  indextts is a zero-shot cloning model that generates fluent speech ignoring the input text
-  unless given a reference voice. Roughly half of what the runtime advertises did not synthesize
-  out of the box.
+  Seven engines were tried and could not be measured, each for a stated reason:
+
+    mini-omni2            the language model runs, then the SNAC decoder exhausts GPU memory
+    lfm2-audio            loads, generates frames, cannot find its detokenizer, returns silence
+                          while reporting a successful synthesis
+    vibevoice-bitnet      the published GGUF was converted without decoder tensors
+    qwen3-tts-1.7b-base   crashes the server on a ggml bounds assertion reading a tensor
+    orpheus-iq1s / iq1m   built for llama.cpp with unprefixed tensors; this runtime's orpheus
+                          backend needs a talker-prefixed conversion, which is a different build
+    dia                   output is quantised into ~2.2s blocks, one per dialogue turn, so long
+                          phrases truncate mid-sentence. Measured, then excluded: its 78.5% is
+                          that cap rather than the model.
+
+  Three more are wired but unmeasured -- moss-tts, moss-tts-local and outetts -- all zero-shot
+  cloners awaiting a reference voice, which is the same condition that kept indextts, pocket-tts
+  and voxcpm2-tts out of the table until they were given one. A cloner with no reference does not
+  fail loudly: it produces fluent, well-formed audio of the wrong words, which reads as a poor
+  model rather than a misconfiguration.
+
+  Two recent models could not be attempted at all. Gepard requires CUDA with vLLM and a
+  PostgreSQL voice store; Echo requires CUDA with at least 8GB of VRAM. Neither has a CPU or
+  Apple Silicon path, so the absence of the newest MeanFlow and continuous-latent work reflects
+  the hardware this benchmark runs on rather than a judgement about those models.
 
   Some rows are partial: a model too slow to finish the 84-phrase corpus within its time budget
   contributes what it managed, and its "passed/total" shows the smaller denominator.

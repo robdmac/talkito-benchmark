@@ -73,7 +73,9 @@ CRISPASR_MODELS: Dict[str, Dict[str, Any]] = {
     # (0/70, 100% WER, 42 runaways), so a reference voice is mandatory rather than optional
     'pocket-tts': {'backend': 'pocket-tts', 'model': 'auto', 'codec': None,
                    'port': 8767, 'normalize': True,
-                   'voice': os.environ.get('POCKET_TTS_VOICE', '')},
+                   'voice': os.environ.get(
+                       'POCKET_TTS_VOICE',
+                       os.path.expanduser('~/.cache/talkito/benchmark-samples/piper.wav'))},
     # Preset/baked-voice LM models in NeuTTS's size class, so none of them clone and none trip
     # the spoken-disclosure path
     'miotts': {'backend': 'miotts', 'model': 'auto', 'codec': None,
@@ -120,12 +122,15 @@ CRISPASR_MODELS: Dict[str, Dict[str, Any]] = {
                      'port': 8790, 'normalize': True},
     'cosyvoice3-rl': {'backend': 'cosyvoice3-tts-rl', 'model': 'auto', 'codec': None,
                     'port': 8791, 'normalize': True},
-    # indextts is a zero-shot cloning model: with no reference voice it generates fluent audio
-    # that ignores the input text entirely (0/12 twice, ~27s per phrase), exactly as pocket-tts
-    # does. Unregistered so a re-run fails immediately rather than spending half an hour proving
-    # it again; give it a reference voice to benchmark it properly.
-    # 'indextts': {'backend': 'indextts', 'model': 'auto', 'codec': None,
-    #            'port': 8792, 'normalize': True},
+    # A zero-shot cloner with no baked speaker: without a reference it generates fluent audio that
+    # ignores the input entirely (0/12 twice, ~27s per phrase), exactly as pocket-tts does. Now
+    # given the same reference xtts clones from, so the comparison is between engines rather than
+    # between reference clips.
+    'indextts': {'backend': 'indextts', 'model': 'auto', 'codec': None,
+                 'port': 8792, 'normalize': True,
+                 'voice': os.environ.get(
+                     'INDEXTTS_VOICE',
+                     os.path.expanduser('~/.cache/talkito/benchmark-samples/piper.wav'))},
     'parler-tts': {'backend': 'parler-tts', 'model': 'auto', 'codec': None,
                  'port': 8793, 'normalize': True},
     'mini-omni2': {'backend': 'mini-omni2', 'model': 'auto', 'codec': None,
@@ -139,7 +144,10 @@ CRISPASR_MODELS: Dict[str, Dict[str, Any]] = {
     'vibevoice-1.5b': {'backend': 'vibevoice-1.5b', 'model': 'auto', 'codec': None,
                      'port': 8798, 'normalize': True},
     'voxcpm2-tts': {'backend': 'voxcpm2-tts', 'model': 'auto', 'codec': None,
-                  'port': 8799, 'normalize': True},
+                  'port': 8799, 'normalize': True,
+                  'voice': os.environ.get(
+                      'VOXCPM_VOICE',
+                      os.path.expanduser('~/.cache/talkito/benchmark-samples/piper.wav'))},
     'zonos': {'backend': 'zonos', 'model': 'auto', 'codec': None,
             'port': 8800, 'normalize': True},
     'vibevoice-bitnet': {'backend': 'vibevoice-bitnet', 'model': 'auto', 'codec': None,

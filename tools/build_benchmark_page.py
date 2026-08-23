@@ -65,7 +65,7 @@ META = {
  "omnivoice":        ("-",     "-",       "Speech is fluent; no upstream model card found, so licence is unverified."),
  "vibevoice-1.5b":   ("-",     "2025-08", "Larger than the 1.02B vibevoice and markedly worse."),
  "zonos":            ("-",     "2025-02", "Second-best PESQ here after piper, but 8x real time."),
- "mms-tts":          ("-",     "2023-05", "Meta MMS: a VITS per language, 1100+ of them. The only engine here not served by the C++ runtime."),
+ "mms-tts":          ("-",     "2023-05", "Meta MMS: a VITS per language, 1100+ of them, and one of eighteen rows run outside the C++ runtime."),
  "tada-1b":           ("-",     "2025-09", "1B multilingual. Middling accuracy, unremarkable throughout."),
  "tada-3b":           ("-",     "2025-09", "3B sibling of tada-1b: three times the weights, three points better."),
  "dots-tts":          ("-",     "2025-06", "4.4 GB f16 and 11x real time, for 6% WER - mid-pack accuracy."),
@@ -352,3 +352,33 @@ page = re.sub(r'<title>[^<]*</title>',
 page = re.sub(r'<h1>[^<]*</h1>', f'<h1>{len(rows)} text-to-speech configurations, measured end to end</h1>', page)
 open(PAGE, "w").write(page)
 print(f"  wrote {len(rows)} rows")
+
+def _warn_stale_notes(rows):
+    """Warn when a note ranks itself against the table, or quotes a figure its own cell contradicts.
+
+    audit_notes.py has existed for a while and does this better, but it has to be remembered, and
+    twice it was not: zonos kept "second-best PESQ here after piper" through the addition of a row
+    that beat it, and that note was written during the pass meant to remove exactly this. A check
+    that only runs when someone thinks to run it does not prevent the failure it was built for.
+
+    Warnings, never an error. A note legitimately citing a neighbouring row -- chatterbox-turbo
+    quoting the q8 RTF -- is correct and would fail any automatic rule.
+    """
+    import re as _re
+    ranks = _re.compile(r"\b(best|worst|fastest|slowest|largest|smallest|highest|lowest|only|"
+                        r"second-best|most|least)\b", _re.I)
+    issues = []
+    for r in rows:
+        note = META.get(r["name"], ("", "", ""))[2]
+        for word in sorted({m.group(0).lower() for m in ranks.finditer(note)}):
+            issues.append(f"{r['name']}: ranks itself ({word!r}) - a new row can falsify this")
+        for figure in _re.findall(r"(\d+(?:\.\d+)?)\s*x\b", note):
+            if r["rtf"] and abs(float(figure) - r["rtf"]) > 0.05 * max(1.0, r["rtf"]):
+                issues.append(f"{r['name']}: note says {figure}x, its cell is {r['rtf']:.2f}x")
+    if issues:
+        print(f"  {len(issues)} note(s) to check:")
+        for line in issues:
+            print(f"    {line}")
+
+
+_warn_stale_notes(rows)
